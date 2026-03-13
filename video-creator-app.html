@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScriptReel — AI Video Creator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --surface3: #22222f;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --accent: #7c5cfc;
+    --accent2: #a78bfa;
+    --accent-glow: rgba(124,92,252,0.25);
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #f0eeff;
+    --text2: #a09aba;
+    --text3: #5a5875;
+    --yt: #ff0000;
+    --ig: #e1306c;
+    --fb: #1877f2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,15,0.95);
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+  .platform-badges { display: flex; gap: 6px; }
+  .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .badge.yt { border-color: var(--yt); color: var(--yt); }
+  .badge.ig { border-color: var(--ig); color: var(--ig); }
+  .badge.fb { border-color: var(--fb); color: var(--fb); }
+  .badge.active.yt { background: var(--yt); color: #fff; }
+  .badge.active.ig { background: var(--ig); color: #fff; }
+  .badge.active.fb { background: var(--fb); color: #fff; }
+
+  /* LAYOUT */
+  .workspace {
+    display: grid;
+    grid-template-columns: 320px 1fr 300px;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+  }
+
+  /* SIDEBAR LEFT */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 1rem 1.2rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-header h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.8rem;
+  }
+  .script-meta { display: flex; gap: 8px; flex-direction: column; }
+  .input-field {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus { border-color: var(--accent); }
+  .input-field::placeholder { color: var(--text3); }
+  select.input-field { cursor: pointer; }
+
+  .scenes-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.8rem;
+  }
+  .scenes-list::-webkit-scrollbar { width: 4px; }
+  .scenes-list::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+  .scene-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .scene-card:hover { border-color: var(--border2); background: var(--surface3); }
+  .scene-card.active { border-color: var(--accent); background: rgba(124,92,252,0.08); }
+  .scene-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .scene-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .scene-duration { font-size: 11px; color: var(--text3); }
+  .scene-preview {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .scene-indicators { display: flex; gap: 4px; margin-top: 5px; }
+  .ind {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--surface3);
+  }
+  .ind.has-voice { background: var(--green); }
+  .ind.has-bg { background: var(--accent); }
+  .ind.has-music { background: var(--amber); }
+
+  .add-scene-btn {
+    margin: 0 0.8rem 0.8rem;
+    padding: 8px;
+    background: transparent;
+    border: 1px dashed var(--border2);
+    border-radius: 8px;
+    color: var(--text3);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .add-scene-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MAIN EDITOR */
+  .editor-main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .editor-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem;
+    background: var(--surface);
+  }
+  .tab-btn {
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text3);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--text2); }
+  .tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  .tab-panel { display: none; flex: 1; overflow: hidden; }
+  .tab-panel.active { display: flex; flex-direction: column; }
+
+  /* SCRIPT EDITOR */
+  .script-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1.2rem;
+    gap: 1rem;
+    overflow-y: auto;
+  }
+  .script-area::-webkit-scrollbar { width: 4px; }
+  .script-area::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+  .script-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .script-textarea {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    resize: none;
+    outline: none;
+    min-height: 160px;
+    transition: border-color 0.2s;
+  }
+  .script-textarea:focus { border-color: var(--accent); }
+  .script-textarea::placeholder { color: var(--text3); }
+
+  .ai-generate-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ai-bar-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent2);
+    font-weight: 600;
+  }
+  .ai-bar-row { display: flex; gap: 8px; }
+  .ai-prompt-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+  }
+  .ai-prompt-input:focus { border-color: var(--accent); }
+  .ai-prompt-input::placeholder { color: var(--text3); }
+
+  /* VOICE PANEL */
+  .voice-panel {
+    padding: 1.2rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .voice-panel::-webkit-scrollbar { width: 4px; }
+  .voice-panel::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+  .voice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .voice-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .voice-card:hover { border-color: var(--border2); }
+  .voice-card.selected { border-color: var(--accent); background: rgba(124,92,252,0.08); }
+  .voice-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .voice-desc { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .voice-play-btn {
+    font-size: 11px;
+    padding: 3px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text2);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .voice-play-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .voice-settings { display: flex; flex-direction: column; gap: 12px; }
+  .slider-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .slider-label { font-size: 12px; color: var(--text2); min-width: 70px; }
+  input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    height: 4px;
+  }
+  .slider-val { font-size: 12px; color: var(--accent2); min-width: 30px; text-align: right; }
+
+  /* BACKGROUND PANEL */
+  .bg-panel {
+    padding: 1.2rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .bg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .bg-swatch {
+    height: 60px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: flex-end;
+    padding: 4px;
+  }
+  .bg-swatch:hover { border-color: var(--border2); transform: scale(1.03); }
+  .bg-swatch.selected { border-color: var(--accent); }
+  .bg-swatch-label { font-size: 9px; color: rgba(255,255,255,0.7); font-weight: 500; }
+
+  /* MUSIC PANEL */
+  .music-panel { padding: 1.2rem; overflow-y: auto; flex: 1; }
+  .music-track {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .music-track:hover { border-color: var(--border2); }
+  .music-track.selected { border-color: var(--accent); background: rgba(124,92,252,0.08); }
+  .music-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .music-info { flex: 1; }
+  .music-name { font-size: 13px; font-weight: 500; }
+  .music-meta { font-size: 11px; color: var(--text3); }
+  .music-play {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 16px;
+    transition: color 0.2s;
+  }
+  .music-play:hover { color: var(--accent); }
+
+  /* PREVIEW AREA */
+  .preview-panel {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .preview-header {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .preview-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .format-toggle { display: flex; gap: 4px; }
+  .fmt-btn {
+    padding: 3px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text3);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .fmt-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .preview-canvas-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: #050508;
+    overflow: hidden;
+  }
+  .video-canvas {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(124,92,252,0.15);
+    transition: all 0.3s;
+  }
+  .video-canvas.landscape { width: 260px; height: 146px; }
+  .video-canvas.portrait { width: 140px; height: 249px; }
+  .video-canvas.square { width: 200px; height: 200px; }
+
+  .canvas-bg {
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    position: relative;
+  }
+  .canvas-scene-text {
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    z-index: 2;
+    line-height: 1.5;
+  }
+  .canvas-subtitle {
+    position: absolute;
+    bottom: 10px;
+    left: 8px; right: 8px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 9px;
+    color: #fff;
+    text-align: center;
+    backdrop-filter: blur(4px);
+  }
+  .canvas-watermark {
+    position: absolute;
+    top: 6px; right: 8px;
+    font-size: 8px;
+    color: rgba(255,255,255,0.4);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+  }
+
+  /* CONTROLS */
+  .preview-controls {
+    border-top: 1px solid var(--border);
+    padding: 0.8rem 1rem;
+  }
+  .playback-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--surface3);
+    border-radius: 2px;
+    margin-bottom: 8px;
+    position: relative;
+    cursor: pointer;
+  }
+  .playback-progress {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s;
+  }
+  .controls-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .ctrl-btn {
+    background: none;
+    border: none;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+  }
+  .ctrl-btn:hover { color: var(--accent2); }
+  .ctrl-btn.play-main {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .ctrl-btn.play-main:hover { background: var(--accent2); transform: scale(1.05); }
+  .time-display { font-size: 11px; color: var(--text3); font-variant-numeric: tabular-nums; }
+
+  /* EXPORT */
+  .export-section {
+    padding: 0.8rem 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .export-section h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .export-btns { display: flex; flex-direction: column; gap: 6px; }
+  .export-btn {
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .export-btn .platform-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  /* BUTTONS */
+  .btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+  .btn-ghost { background: none; color: var(--text3); border: 1px solid transparent; }
+  .btn-ghost:hover { color: var(--text2); border-color: var(--border); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 1.5rem;
+    width: 480px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; }
+  .form-group { margin-bottom: 0.9rem; }
+  .form-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; display: block; }
+
+  /* AI GENERATING ANIMATION */
+  .generating {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(124,92,252,0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(124,92,252,0.3);
+    font-size: 12px;
+    color: var(--accent2);
+  }
+  .generating.visible { display: flex; }
+  .gen-dots span {
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: bounce 1.2s infinite;
+    margin: 0 1px;
+  }
+  .gen-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .gen-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex;
+    gap: 12px;
+    padding: 0.6rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    align-items: center;
+  }
+  .stat-item { display: flex; align-items: center; gap: 5px; }
+  .stat-label { font-size: 11px; color: var(--text3); }
+  .stat-val { font-size: 11px; font-weight: 500; color: var(--text2); }
+  .stat-sep { color: var(--border2); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 300;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+
+  /* SUBTITLE SETTINGS */
+  .subtitle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .subtitle-label { font-size: 13px; color: var(--text2); }
+  .toggle {
+    width: 36px; height: 20px;
+    border-radius: 10px;
+    background: var(--surface3);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+  }
+  .toggle.on::after { transform: translateX(16px); }
+
+  /* COLOR OVERLAYS */
+  .bg-gradient-1 { background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); }
+  .bg-gradient-2 { background: linear-gradient(135deg, #0d0d0d, #1a0a0a, #2d1515); }
+  .bg-gradient-3 { background: linear-gradient(135deg, #0a0f1e, #102a4c, #0d1f35); }
+  .bg-gradient-4 { background: linear-gradient(135deg, #0f0a1e, #1a0f3c, #2d1585); }
+  .bg-gradient-5 { background: linear-gradient(135deg, #0a1a0f, #0f3a2a, #155a40); }
+  .bg-gradient-6 { background: linear-gradient(135deg, #1e1a0a, #3a2e0f, #5a4515); }
+  .bg-none { background: #111; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Script<span>Reel</span></div>
+  <div class="header-actions">
+    <div class="platform-badges">
+      <button class="badge yt active" onclick="togglePlatform('yt', this)">▶ YouTube</button>
+      <button class="badge ig" onclick="togglePlatform('ig', this)">◎ Instagram</button>
+      <button class="badge fb" onclick="togglePlatform('fb', this)">f Facebook</button>
+    </div>
+    <button class="btn btn-secondary" onclick="openModal('project-modal')">⚙ Project</button>
+    <button class="btn btn-primary" onclick="generateAllVoice()">✦ Generate All</button>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- LEFT SIDEBAR: SCENES -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3>Scenes</h3>
+      <div class="script-meta">
+        <input class="input-field" id="project-title" type="text" placeholder="Project title..." value="My First Video">
+        <select class="input-field" id="video-tone">
+          <option value="engaging">Engaging &amp; Energetic</option>
+          <option value="calm">Calm &amp; Educational</option>
+          <option value="dramatic">Dramatic &amp; Cinematic</option>
+          <option value="funny">Funny &amp; Casual</option>
+          <option value="professional">Professional &amp; Corporate</option>
+        </select>
+      </div>
+    </div>
+    <div class="scenes-list" id="scenes-list"></div>
+    <button class="add-scene-btn" onclick="addScene()">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Add Scene
+    </button>
+  </div>
+
+  <!-- MAIN EDITOR -->
+  <div class="editor-main">
+    <div class="editor-tabs">
+      <button class="tab-btn active" onclick="switchTab('script', this)">✎ Script</button>
+      <button class="tab-btn" onclick="switchTab('voice', this)">🎙 Voiceover</button>
+      <button class="tab-btn" onclick="switchTab('background', this)">🖼 Background</button>
+      <button class="tab-btn" onclick="switchTab('music', this)">🎵 Music</button>
+      <button class="tab-btn" onclick="switchTab('subtitles', this)">T Subtitles</button>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item"><span class="stat-label">Scenes:</span><span class="stat-val" id="stat-scenes">3</span></div>
+      <span class="stat-sep">•</span>
+      <div class="stat-item"><span class="stat-label">Total duration:</span><span class="stat-val" id="stat-duration">0:45</span></div>
+      <span class="stat-sep">•</span>
+      <div class="stat-item"><span class="stat-label">Words:</span><span class="stat-val" id="stat-words">120</span></div>
+      <span class="stat-sep">•</span>
+      <div class="stat-item"><span class="stat-label">Voice:</span><span class="stat-val" id="stat-voice">None</span></div>
+    </div>
+
+    <!-- SCRIPT TAB -->
+    <div class="tab-panel active" id="tab-script">
+      <div class="script-area">
+        <div>
+          <div class="script-label">Scene Title</div>
+          <input class="input-field" id="scene-title-input" placeholder="e.g. Hook / Intro / Call to Action..." style="max-width:100%">
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+          <div class="script-label">Script / Dialogue</div>
+          <textarea class="script-textarea" id="scene-script" placeholder="Type your script here... This text will be spoken by the AI voiceover. Be natural and conversational." style="flex:1" oninput="updateSceneScript(this.value)"></textarea>
+        </div>
+        <div class="ai-generate-bar">
+          <div class="ai-bar-label">✦ AI Script Assistant</div>
+          <div class="ai-bar-row">
+            <input class="ai-prompt-input" id="ai-prompt" placeholder="Describe what this scene should say...">
+            <button class="btn btn-primary" onclick="generateScriptWithAI()">Generate</button>
+          </div>
+          <div class="generating" id="generating-indicator">
+            <div class="gen-dots"><span></span><span></span><span></span></div>
+            <span>AI is writing your script...</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="clearScene()">Clear</button>
+          <button class="btn btn-secondary" onclick="splitIntoScenes()">✦ Auto-split Scenes</button>
+          <button class="btn btn-primary" onclick="generateVoiceForScene()">🎙 Generate Voice</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOICE TAB -->
+    <div class="tab-panel" id="tab-voice">
+      <div class="voice-panel">
+        <p class="script-label" style="margin-bottom:10px;">Choose Voice</p>
+        <div class="voice-grid" id="voice-grid"></div>
+        <div class="voice-settings">
+          <p class="script-label">Voice Settings</p>
+          <div class="slider-row">
+            <span class="slider-label">Speed</span>
+            <input type="range" min="0.5" max="2" step="0.1" value="1" oninput="updateSlider(this,'speed-val')">
+            <span class="slider-val" id="speed-val">1.0x</span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-label">Pitch</span>
+            <input type="range" min="-10" max="10" step="1" value="0" oninput="updateSlider(this,'pitch-val')">
+            <span class="slider-val" id="pitch-val">0</span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-label">Volume</span>
+            <input type="range" min="0" max="100" value="80" oninput="updateSlider(this,'vol-val')">
+            <span class="slider-val" id="vol-val">80%</span>
+          </div>
+          <div class="slider-row">
+            <span class="slider-label">Pause length</span>
+            <input type="range" min="0" max="3" step="0.5" value="0.5" oninput="updateSlider(this,'pause-val')">
+            <span class="slider-val" id="pause-val">0.5s</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="generateVoiceForScene()">🎙 Generate Voiceover</button>
+          <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="generateAllVoice()">Generate All Scenes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACKGROUND TAB -->
+    <div class="tab-panel" id="tab-background">
+      <div class="bg-panel">
+        <p class="script-label" style="margin-bottom:10px;">Background Style</p>
+        <div class="bg-grid" id="bg-grid"></div>
+        <div style="margin-top:1rem">
+          <p class="script-label" style="margin-bottom:8px">Text Overlay Style</p>
+          <select class="input-field" id="text-style-select" onchange="updateTextStyle(this.value)">
+            <option value="center">Centered title</option>
+            <option value="lower-third">Lower third</option>
+            <option value="top">Top overlay</option>
+            <option value="kinetic">Kinetic text</option>
+            <option value="none">No text overlay</option>
+          </select>
+          <div style="margin-top:8px">
+            <p class="script-label" style="margin-bottom:6px">Font Style</p>
+            <select class="input-field" id="font-select">
+              <option>Bold Impact</option>
+              <option>Clean Modern</option>
+              <option>Elegant Serif</option>
+              <option>Playful Rounded</option>
+            </select>
+          </div>
+          <div style="margin-top:8px">
+            <p class="script-label" style="margin-bottom:6px">Animation</p>
+            <select class="input-field" id="anim-select">
+              <option>Fade In</option>
+              <option>Slide Up</option>
+              <option>Zoom In</option>
+              <option>Typewriter</option>
+              <option>No Animation</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MUSIC TAB -->
+    <div class="tab-panel" id="tab-music">
+      <div class="music-panel">
+        <p class="script-label" style="margin-bottom:10px">Background Music</p>
+        <div id="music-list"></div>
+        <div style="margin-top:1rem">
+          <div class="slider-row">
+            <span class="slider-label">Music Volume</span>
+            <input type="range" min="0" max="100" value="30" oninput="updateSlider(this,'music-vol-val')">
+            <span class="slider-val" id="music-vol-val">30%</span>
+          </div>
+          <div class="slider-row" style="margin-top:8px">
+            <span class="slider-label">Fade In</span>
+            <input type="range" min="0" max="5" step="0.5" value="1" oninput="updateSlider(this,'fade-in-val')">
+            <span class="slider-val" id="fade-in-val">1.0s</span>
+          </div>
+          <div class="slider-row" style="margin-top:8px">
+            <span class="slider-label">Fade Out</span>
+            <input type="range" min="0" max="5" step="0.5" value="2" oninput="updateSlider(this,'fade-out-val')">
+            <span class="slider-val" id="fade-out-val">2.0s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBTITLES TAB -->
+    <div class="tab-panel" id="tab-subtitles">
+      <div style="padding:1.2rem;flex:1;overflow-y:auto">
+        <p class="script-label" style="margin-bottom:12px">Subtitle Settings</p>
+        <div class="subtitle-row">
+          <span class="subtitle-label">Enable Subtitles</span>
+          <button class="toggle on" id="toggle-subtitles" onclick="toggleSubtitle(this)"></button>
+        </div>
+        <div class="subtitle-row">
+          <span class="subtitle-label">Auto-generate from script</span>
+          <button class="toggle on" id="toggle-auto-sub" onclick="toggleSubtitle(this)"></button>
+        </div>
+        <div class="subtitle-row">
+          <span class="subtitle-label">Highlight spoken word</span>
+          <button class="toggle" id="toggle-highlight" onclick="toggleSubtitle(this)"></button>
+        </div>
+        <div class="subtitle-row">
+          <span class="subtitle-label">Emoji subtitles</span>
+          <button class="toggle" id="toggle-emoji" onclick="toggleSubtitle(this)"></button>
+        </div>
+        <div style="margin-top:1rem;display:flex;flex-direction:column;gap:10px">
+          <div>
+            <p class="form-label">Subtitle Style</p>
+            <select class="input-field">
+              <option>White text, black outline</option>
+              <option>Yellow text, bold</option>
+              <option>White box background</option>
+              <option>Gradient background</option>
+              <option>TikTok style (all caps)</option>
+            </select>
+          </div>
+          <div>
+            <p class="form-label">Font Size</p>
+            <div class="slider-row">
+              <input type="range" min="12" max="48" value="24" style="flex:1" oninput="updateSlider(this,'sub-size-val')">
+              <span class="slider-val" id="sub-size-val">24px</span>
+            </div>
+          </div>
+          <div>
+            <p class="form-label">Position</p>
+            <select class="input-field">
+              <option>Bottom (default)</option>
+              <option>Middle</option>
+              <option>Top</option>
+            </select>
+          </div>
+          <div>
+            <p class="form-label">Words per line</p>
+            <select class="input-field">
+              <option>3 words (TikTok style)</option>
+              <option>5 words</option>
+              <option>Full sentence</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: PREVIEW + EXPORT -->
+  <div class="preview-panel">
+    <div class="preview-header">
+      <span class="preview-title">Preview</span>
+      <div class="format-toggle">
+        <button class="fmt-btn active" onclick="setFormat('landscape', this)">16:9</button>
+        <button class="fmt-btn" onclick="setFormat('portrait', this)">9:16</button>
+        <button class="fmt-btn" onclick="setFormat('square', this)">1:1</button>
+      </div>
+    </div>
+    <div class="preview-canvas-wrap">
+      <div class="video-canvas landscape" id="video-canvas">
+        <div class="canvas-bg bg-gradient-1" id="canvas-bg">
+          <div class="canvas-watermark">ScriptReel</div>
+          <div class="canvas-scene-text" id="canvas-text">Select a scene and write your script to preview it here.</div>
+          <div class="canvas-subtitle" id="canvas-subtitle" style="display:none">Subtitle preview text</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-controls">
+      <div class="playback-bar" onclick="seekPlayback(event, this)">
+        <div class="playback-progress" id="playback-progress"></div>
+      </div>
+      <div class="controls-row">
+        <button class="ctrl-btn" onclick="prevScene()" title="Previous">⏮</button>
+        <button class="ctrl-btn play-main" id="play-btn" onclick="togglePlay()">▶</button>
+        <button class="ctrl-btn" onclick="nextScene()" title="Next">⏭</button>
+        <span class="time-display" id="time-display">0:00 / 0:00</span>
+      </div>
+    </div>
+
+    <div class="export-section">
+      <h4>Export</h4>
+      <div class="export-btns">
+        <button class="export-btn" onclick="exportVideo('youtube')">
+          <span class="platform-dot" style="background:var(--yt)"></span>
+          Export for YouTube (16:9)
+        </button>
+        <button class="export-btn" onclick="exportVideo('instagram')">
+          <span class="platform-dot" style="background:var(--ig)"></span>
+          Export for Instagram (9:16 / 1:1)
+        </button>
+        <button class="export-btn" onclick="exportVideo('facebook')">
+          <span class="platform-dot" style="background:var(--fb)"></span>
+          Export for Facebook
+        </button>
+        <button class="export-btn" onclick="exportVideo('all')" style="border-color:var(--accent);color:var(--accent2)">
+          ✦ Export All Formats
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="project-modal">
+  <div class="modal">
+    <div class="modal-title">Project Settings</div>
+    <div class="form-group">
+      <label class="form-label">Project Name</label>
+      <input class="input-field" placeholder="My Awesome Video" value="My First Video">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Target Duration</label>
+      <select class="input-field">
+        <option>Under 60 seconds (Short)</option>
+        <option>1–3 minutes</option>
+        <option>3–10 minutes</option>
+        <option>10+ minutes</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Content Category</label>
+      <select class="input-field">
+        <option>Education / Tutorial</option>
+        <option>Entertainment</option>
+        <option>Business / Marketing</option>
+        <option>News / Commentary</option>
+        <option>Personal / Vlog</option>
+        <option>Product Review</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Target Audience</label>
+      <input class="input-field" placeholder="e.g. Young adults, tech enthusiasts...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Keywords / Tags</label>
+      <input class="input-field" placeholder="e.g. AI, productivity, tips...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('project-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+const voices = [
+  { id:'nova', name:'Nova', desc:'Clear & professional', gender:'Female', lang:'EN-US' },
+  { id:'echo', name:'Echo', desc:'Warm & friendly', gender:'Male', lang:'EN-US' },
+  { id:'aria', name:'Aria', desc:'Energetic & young', gender:'Female', lang:'EN-US' },
+  { id:'onyx', name:'Onyx', desc:'Deep & authoritative', gender:'Male', lang:'EN-US' },
+  { id:'shimmer', name:'Shimmer', desc:'Soft & soothing', gender:'Female', lang:'EN-UK' },
+  { id:'alloy', name:'Alloy', desc:'Neutral & versatile', gender:'Neutral', lang:'EN-US' },
+];
+
+const backgrounds = [
+  { id:'grad1', label:'Night Sky', cls:'bg-gradient-1' },
+  { id:'grad2', label:'Deep Red', cls:'bg-gradient-2' },
+  { id:'grad3', label:'Ocean', cls:'bg-gradient-3' },
+  { id:'grad4', label:'Cosmic', cls:'bg-gradient-4' },
+  { id:'grad5', label:'Forest', cls:'bg-gradient-5' },
+  { id:'grad6', label:'Amber', cls:'bg-gradient-6' },
+];
+
+const musicTracks = [
+  { id:'1', name:'Upbeat Corporate', genre:'Corporate', bpm:120, duration:'2:30', icon:'💼' },
+  { id:'2', name:'Epic Cinematic', genre:'Cinematic', bpm:90, duration:'3:15', icon:'🎬' },
+  { id:'3', name:'Chill Lo-Fi', genre:'Lo-Fi', bpm:75, duration:'2:45', icon:'🌙' },
+  { id:'4', name:'Tech Minimal', genre:'Electronic', bpm:110, duration:'2:00', icon:'⚡' },
+  { id:'5', name:'Inspiring Rise', genre:'Motivational', bpm:100, duration:'2:50', icon:'🚀' },
+  { id:'6', name:'Soft Piano', genre:'Ambient', bpm:65, duration:'3:00', icon:'🎹' },
+];
+
+let scenes = [
+  { id:1, title:'Hook / Intro', script:'Are you tired of spending hours creating content? What if I told you there\'s a smarter way to do it? In the next 60 seconds, I\'ll show you exactly how.', voice:'nova', bg:'grad1', hasVoice:true, hasBg:true, hasMusic:false, duration:12 },
+  { id:2, title:'Main Message', script:'With AI-powered tools, you can now write, narrate, and produce professional videos in minutes — not hours. Whether you\'re making content for YouTube, Instagram, or Facebook, the workflow is the same.', voice:'nova', bg:'grad3', hasVoice:true, hasBg:true, hasMusic:false, duration:18 },
+  { id:3, title:'Call to Action', script:'Click the link below to get started for free. Join thousands of creators who are already saving time and growing their audience. The future of content is here — and it\'s easier than you think.', voice:'nova', bg:'grad4', hasVoice:true, hasBg:true, hasMusic:false, duration:15 },
+];
+
+let activeScene = 0;
+let selectedVoice = 'nova';
+let selectedBg = 'grad1';
+let selectedMusic = null;
+let currentFormat = 'landscape';
+let isPlaying = false;
+let playProgress = 0;
+let playInterval = null;
+let nextId = 4;
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+function init() {
+  renderScenes();
+  renderVoices();
+  renderBackgrounds();
+  renderMusic();
+  selectScene(0);
+  updateStats();
+}
+
+// ─────────────────────────────────────────────
+// SCENES
+// ─────────────────────────────────────────────
+function renderScenes() {
+  const list = document.getElementById('scenes-list');
+  list.innerHTML = '';
+  scenes.forEach((s, i) => {
+    const card = document.createElement('div');
+    card.className = `scene-card${i === activeScene ? ' active' : ''}`;
+    card.onclick = () => selectScene(i);
+    card.innerHTML = `
+      <div class="scene-card-header">
+        <span class="scene-num">Scene ${i+1}</span>
+        <span class="scene-duration">${s.duration}s</span>
+      </div>
+      <div class="scene-preview">${s.title || s.script.slice(0,50)+'...'}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
+        <div class="scene-indicators">
+          <span class="ind ${s.hasVoice?'has-voice':''}" title="Voice"></span>
+          <span class="ind ${s.hasBg?'has-bg':''}" title="Background"></span>
+          <span class="ind ${s.hasMusic?'has-music':''}" title="Music"></span>
+        </div>
+        <button style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0" onclick="event.stopPropagation();deleteScene(${i})" title="Delete">✕</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+  updateStats();
+}
+
+function selectScene(i) {
+  activeScene = i;
+  const s = scenes[i];
+  selectedVoice = s.voice || 'nova';
+  selectedBg = s.bg || 'grad1';
+  document.getElementById('scene-title-input').value = s.title || '';
+  document.getElementById('scene-script').value = s.script || '';
+  renderScenes();
+  updateVoiceSelection();
+  updateBgSelection();
+  updateCanvas();
+}
+
+function updateSceneScript(val) {
+  scenes[activeScene].script = val;
+  const words = val.trim().split(/\s+/).filter(Boolean).length;
+  scenes[activeScene].duration = Math.max(3, Math.round(words / 2.5));
+  renderScenes();
+  updateCanvas();
+}
+
+function addScene() {
+  scenes.push({ id: nextId++, title: `Scene ${scenes.length+1}`, script:'', voice:'nova', bg:'grad1', hasVoice:false, hasBg:true, hasMusic:false, duration:10 });
+  selectScene(scenes.length - 1);
+  showToast('New scene added', 'success');
+}
+
+function deleteScene(i) {
+  if (scenes.length === 1) { showToast('Need at least one scene', 'error'); return; }
+  scenes.splice(i, 1);
+  if (activeScene >= scenes.length) activeScene = scenes.length - 1;
+  selectScene(activeScene);
+  showToast('Scene deleted');
+}
+
+function clearScene() {
+  scenes[activeScene].script = '';
+  scenes[activeScene].hasVoice = false;
+  document.getElementById('scene-script').value = '';
+  renderScenes();
+  updateCanvas();
+}
+
+// ─────────────────────────────────────────────
+// AI SCRIPT GENERATION
+// ─────────────────────────────────────────────
+async function generateScriptWithAI() {
+  const prompt = document.getElementById('ai-prompt').value.trim();
+  if (!prompt) { showToast('Enter a prompt first', 'error'); return; }
+
+  const indicator = document.getElementById('generating-indicator');
+  indicator.classList.add('visible');
+
+  const tone = document.getElementById('video-tone').value;
+  const sceneNum = activeScene + 1;
+  const totalScenes = scenes.length;
+  const projectTitle = document.getElementById('project-title').value || 'video';
+
+  const systemPrompt = `You are an expert video script writer. Write concise, engaging scripts for short-form video content.
+Write in a ${tone} tone. Keep it natural and conversational — as it will be spoken aloud.
+This is scene ${sceneNum} of ${totalScenes} for a video called "${projectTitle}".
+Write ONLY the spoken script text. No stage directions, no speaker labels, no quotes. Just the words to be spoken.
+Keep it between 30-80 words unless specified otherwise.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text || '').join('') || '';
+    if (text) {
+      document.getElementById('scene-script').value = text;
+      scenes[activeScene].script = text;
+      const words = text.trim().split(/\s+/).length;
+      scenes[activeScene].duration = Math.max(3, Math.round(words / 2.5));
+      renderScenes();
+      updateCanvas();
+      showToast('Script generated!', 'success');
+      document.getElementById('ai-prompt').value = '';
+    } else {
+      showToast('No response from AI', 'error');
+    }
+  } catch(e) {
+    showToast('API error — check connection', 'error');
+  } finally {
+    indicator.classList.remove('visible');
+  }
+}
+
+async function splitIntoScenes() {
+  const script = document.getElementById('scene-script').value.trim();
+  if (!script) { showToast('Write a full script first', 'error'); return; }
+
+  const indicator = document.getElementById('generating-indicator');
+  indicator.classList.add('visible');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `Split the given video script into logical scenes. Return ONLY a JSON array like:
+[{"title":"Scene title","script":"Scene script text"},...]
+3-6 scenes max. No markdown, no explanation, pure JSON only.`,
+        messages: [{ role:'user', content: script }]
+      })
+    });
+    const data = await res.json();
+    let text = data.content?.map(b => b.text || '').join('') || '';
+    text = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      scenes = parsed.map((s, i) => ({
+        id: i+1, title: s.title, script: s.script,
+        voice: 'nova', bg: backgrounds[i % backgrounds.length].id,
+        hasVoice:false, hasBg:true, hasMusic:false,
+        duration: Math.max(3, Math.round(s.script.split(/\s+/).length / 2.5))
+      }));
+      nextId = scenes.length + 1;
+      selectScene(0);
+      showToast(`Split into ${scenes.length} scenes!`, 'success');
+    }
+  } catch(e) {
+    showToast('Could not split — try again', 'error');
+  } finally {
+    indicator.classList.remove('visible');
+  }
+}
+
+// ─────────────────────────────────────────────
+// VOICE
+// ─────────────────────────────────────────────
+function renderVoices() {
+  const grid = document.getElementById('voice-grid');
+  grid.innerHTML = voices.map(v => `
+    <div class="voice-card ${v.id === selectedVoice ? 'selected' : ''}" id="voice-${v.id}" onclick="selectVoice('${v.id}')">
+      <div class="voice-name">${v.name}</div>
+      <div class="voice-desc">${v.desc} · ${v.gender}</div>
+      <button class="voice-play-btn" onclick="event.stopPropagation();previewVoice('${v.id}')">▶ Preview</button>
+    </div>
+  `).join('');
+}
+
+function selectVoice(id) {
+  selectedVoice = id;
+  scenes[activeScene].voice = id;
+  document.getElementById('stat-voice').textContent = voices.find(v=>v.id===id)?.name || 'None';
+  updateVoiceSelection();
+}
+
+function updateVoiceSelection() {
+  document.querySelectorAll('.voice-card').forEach(c => c.classList.remove('selected'));
+  const el = document.getElementById(`voice-${selectedVoice}`);
+  if (el) el.classList.add('selected');
+  document.getElementById('stat-voice').textContent = voices.find(v=>v.id===selectedVoice)?.name || 'None';
+}
+
+function previewVoice(id) {
+  const voice = voices.find(v => v.id === id);
+  const text = `Hi! I'm ${voice.name}. ${voice.desc}. I'll be narrating your video.`;
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = parseFloat(document.querySelector('#tab-voice input[type=range]')?.value || 1);
+    window.speechSynthesis.speak(utt);
+    showToast(`Previewing ${voice.name}...`);
+  } else {
+    showToast('Voice preview not supported in this browser');
+  }
+}
+
+function generateVoiceForScene() {
+  const script = scenes[activeScene].script;
+  if (!script.trim()) { showToast('Write a script first', 'error'); return; }
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(script);
+    const speed = document.querySelector('#tab-voice input[type=range]');
+    if (speed) utt.rate = parseFloat(speed.value);
+    window.speechSynthesis.speak(utt);
+  }
+  scenes[activeScene].hasVoice = true;
+  renderScenes();
+  showToast('Voiceover generated!', 'success');
+}
+
+async function generateAllVoice() {
+  let count = 0;
+  for (let i = 0; i < scenes.length; i++) {
+    if (scenes[i].script.trim()) {
+      scenes[i].hasVoice = true;
+      count++;
+    }
+  }
+  renderScenes();
+  showToast(`Generated voiceover for ${count} scenes!`, 'success');
+}
+
+// ─────────────────────────────────────────────
+// BACKGROUND
+// ─────────────────────────────────────────────
+function renderBackgrounds() {
+  const grid = document.getElementById('bg-grid');
+  grid.innerHTML = backgrounds.map(b => `
+    <div class="bg-swatch ${b.cls} ${b.id === selectedBg ? 'selected' : ''}" id="bg-${b.id}" onclick="selectBg('${b.id}')">
+      <span class="bg-swatch-label">${b.label}</span>
+    </div>
+  `).join('');
+}
+
+function selectBg(id) {
+  selectedBg = id;
+  scenes[activeScene].bg = id;
+  scenes[activeScene].hasBg = true;
+  updateBgSelection();
+  updateCanvas();
+  renderScenes();
+}
+
+function updateBgSelection() {
+  document.querySelectorAll('.bg-swatch').forEach(c => c.classList.remove('selected'));
+  const el = document.getElementById(`bg-${selectedBg}`);
+  if (el) el.classList.add('selected');
+}
+
+// ─────────────────────────────────────────────
+// MUSIC
+// ─────────────────────────────────────────────
+function renderMusic() {
+  const list = document.getElementById('music-list');
+  list.innerHTML = musicTracks.map(m => `
+    <div class="music-track ${m.id === selectedMusic ? 'selected' : ''}" id="music-${m.id}" onclick="selectMusic('${m.id}')">
+      <div class="music-icon" style="background:var(--surface2)">${m.icon}</div>
+      <div class="music-info">
+        <div class="music-name">${m.name}</div>
+        <div class="music-meta">${m.genre} · ${m.bpm}bpm · ${m.duration}</div>
+      </div>
+      <button class="music-play" onclick="event.stopPropagation();showToast('Music preview: ${m.name}')">▶</button>
+    </div>
+  `).join('');
+}
+
+function selectMusic(id) {
+  selectedMusic = id;
+  scenes[activeScene].hasMusic = true;
+  document.querySelectorAll('.music-track').forEach(c => c.classList.remove('selected'));
+  const el = document.getElementById(`music-${id}`);
+  if (el) el.classList.add('selected');
+  renderScenes();
+  showToast('Music track selected', 'success');
+}
+
+// ─────────────────────────────────────────────
+// CANVAS / PREVIEW
+// ─────────────────────────────────────────────
+function updateCanvas() {
+  const s = scenes[activeScene];
+  const canvasBg = document.getElementById('canvas-bg');
+  const text = document.getElementById('canvas-text');
+  const subtitle = document.getElementById('canvas-subtitle');
+
+  const bg = backgrounds.find(b => b.id === (s.bg || 'grad1'));
+  canvasBg.className = `canvas-bg ${bg ? bg.cls : 'bg-gradient-1'}`;
+
+  const words = s.script.split(' ').slice(0, 12).join(' ');
+  text.textContent = words + (s.script.split(' ').length > 12 ? '...' : '');
+
+  const subEnabled = document.getElementById('toggle-subtitles')?.classList.contains('on');
+  subtitle.style.display = subEnabled ? 'block' : 'none';
+  if (subEnabled) {
+    const subWords = s.script.split(' ').slice(0, 5).join(' ');
+    subtitle.textContent = subWords + '...';
+  }
+}
+
+function setFormat(fmt, btn) {
+  currentFormat = fmt;
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const canvas = document.getElementById('video-canvas');
+  canvas.className = `video-canvas ${fmt}`;
+}
+
+// ─────────────────────────────────────────────
+// PLAYBACK
+// ─────────────────────────────────────────────
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('play-btn');
+  btn.textContent = isPlaying ? '⏸' : '▶';
+
+  if (isPlaying) {
+    if ('speechSynthesis' in window && scenes[activeScene].script) {
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(scenes[activeScene].script);
+      utt.rate = 1;
+      utt.onend = () => { isPlaying = false; btn.textContent = '▶'; playProgress = 0; updatePlaybackUI(); };
+      window.speechSynthesis.speak(utt);
+    }
+    const total = scenes[activeScene].duration * 1000;
+    const step = 100;
+    let elapsed = playProgress * total;
+    playInterval = setInterval(() => {
+      elapsed += step;
+      playProgress = Math.min(elapsed / total, 1);
+      updatePlaybackUI();
+      if (playProgress >= 1) {
+        clearInterval(playInterval);
+        isPlaying = false;
+        btn.textContent = '▶';
+        window.speechSynthesis?.cancel();
+        playProgress = 0;
+        updatePlaybackUI();
+      }
+    }, step);
+  } else {
+    clearInterval(playInterval);
+    window.speechSynthesis?.cancel();
+  }
+}
+
+function updatePlaybackUI() {
+  document.getElementById('playback-progress').style.width = `${playProgress * 100}%`;
+  const dur = scenes[activeScene].duration;
+  const cur = Math.round(playProgress * dur);
+  document.getElementById('time-display').textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+}
+
+function formatTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function prevScene() {
+  if (activeScene > 0) { stopPlay(); selectScene(activeScene - 1); }
+}
+
+function nextScene() {
+  if (activeScene < scenes.length - 1) { stopPlay(); selectScene(activeScene + 1); }
+}
+
+function stopPlay() {
+  isPlaying = false;
+  clearInterval(playInterval);
+  window.speechSynthesis?.cancel();
+  playProgress = 0;
+  document.getElementById('play-btn').textContent = '▶';
+  updatePlaybackUI();
+}
+
+function seekPlayback(e, bar) {
+  const rect = bar.getBoundingClientRect();
+  playProgress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  updatePlaybackUI();
+}
+
+// ─────────────────────────────────────────────
+// EXPORT
+// ─────────────────────────────────────────────
+async function exportVideo(platform) {
+  showToast(`Preparing ${platform} export...`);
+
+  const title = document.getElementById('project-title').value || 'video';
+  const scenesSummary = scenes.map((s,i) =>
+    `Scene ${i+1}: "${s.title}" (${s.duration}s)\n${s.script}`
+  ).join('\n\n');
+
+  let format = '16:9';
+  if (platform === 'instagram') format = '9:16 (Reels) or 1:1 (Feed)';
+  if (platform === 'facebook') format = '16:9 or 1:1';
+  if (platform === 'all') format = 'All formats';
+
+  const exportInfo = `
+=== ScriptReel Export ===
+Project: ${title}
+Platform: ${platform.toUpperCase()}
+Format: ${format}
+Scenes: ${scenes.length}
+Total Duration: ~${scenes.reduce((a,s)=>a+s.duration,0)}s
+Voice: ${voices.find(v=>v.id===selectedVoice)?.name || 'None'}
+Music: ${selectedMusic ? musicTracks.find(m=>m.id===selectedMusic)?.name : 'None'}
+
+--- SCRIPT ---
+${scenesSummary}
+
+--- EXPORT SETTINGS ---
+Subtitles: Enabled
+Background Music: ${selectedMusic ? 'Yes' : 'No'}
+Auto-voiceover: Yes
+  `.trim();
+
+  const blob = new Blob([exportInfo], { type:'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${title.replace(/\s+/g,'-')}-${platform}-export.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  showToast(`${platform === 'all' ? 'All formats' : platform} exported!`, 'success');
+}
+
+// ─────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+// ─────────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('stat-scenes').textContent = scenes.length;
+  const total = scenes.reduce((a,s) => a + (s.duration || 0), 0);
+  document.getElementById('stat-duration').textContent = formatTime(total);
+  const words = scenes.reduce((a,s) => a + (s.script?.split(/\s+/).filter(Boolean).length || 0), 0);
+  document.getElementById('stat-words').textContent = words;
+}
+
+// ─────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────
+function updateSlider(el, outId) {
+  const val = parseFloat(el.value);
+  const step = parseFloat(el.step || 1);
+  let display = val;
+  if (outId.includes('vol') || outId.includes('sub-size')) display = val + (outId.includes('vol') ? '%' : 'px');
+  else if (step < 1 && outId.includes('speed')) display = val.toFixed(1) + 'x';
+  else if (outId.includes('fade') || outId.includes('pause')) display = val.toFixed(1) + 's';
+  document.getElementById(outId).textContent = display;
+}
+
+function toggleSubtitle(btn) {
+  btn.classList.toggle('on');
+  updateCanvas();
+}
+
+function togglePlatform(type, btn) { btn.classList.toggle('active'); }
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function saveProject() {
+  closeModal('project-modal');
+  showToast('Project saved!', 'success');
+}
+
+function updateTextStyle(val) { updateCanvas(); }
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  const icons = { success:'✓', error:'✕', '':'ℹ' };
+  t.textContent = `${icons[type||''] || 'ℹ'} ${msg}`;
+  t.className = `toast show ${type || ''}`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─────────────────────────────────────────────
+// START
+// ─────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
