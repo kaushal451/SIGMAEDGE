@@ -192,15 +192,32 @@ async function startExtraction() {
 
       // Navigate next page if enabled
       if (settings.autoNext && currentPage < pageTo) {
-        await chrome.tabs.sendMessage(tab.id, { action: 'nextPage' });
-        setTimeout(() => {
-          currentPage++;
-          extractPage();
-        }, settings.scrollDelay + 1500);
+        const navResult = await chrome.tabs.sendMessage(tab.id, { action: 'nextPage' });
+
+if (!navResult || !navResult.success) {
+  console.log('Pagination failed or last page reached');
+  finishExtraction(extractedThisSession);
+  return;
+}
+
+currentPage++;
+setTimeout(extractPage, settings.scrollDelay);
+        
       } else {
         currentPage++;
         if (currentPage <= pageTo) {
           setTimeout(extractPage, settings.scrollDelay);
+          let lastFirstLead = null;
+          const firstLead = results.leads?.[0]?.linkedinUrl;
+
+if (firstLead && firstLead === lastFirstLead) {
+  console.log('Same page detected → stopping');
+  finishExtraction(extractedThisSession);
+  return;
+}
+
+lastFirstLead = firstLead;
+        }
         } else {
           finishExtraction(extractedThisSession);
         }
