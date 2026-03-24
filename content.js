@@ -179,35 +179,43 @@ function extractTextByPattern(card, type) {
 }
 
 // ─── NEXT PAGE ────────────────────────────────────────────────────────────────
-function clickNextPage() {
-  const nextBtns = [
-    'button[aria-label="Next"]',
-    '.search-results__pagination-next-button',
-    '[data-control-name="pagination_next"]',
-    'button.artdeco-pagination__button--next',
-    'li.artdeco-pagination__indicator--number.active + li button',
-  ];
+async function clickNextPageAndWait() {
+  const getFirstCardText = () => {
+    const el = document.querySelector('[data-anonymize="person-name"], .artdeco-entity-lockup__title');
+    return el ? el.textContent.trim() : '';
+  };
 
-  for (const sel of nextBtns) {
-    const btn = document.querySelector(sel);
-    if (btn && !btn.disabled) {
-      btn.click();
-      return true;
-    }
-  }
+  const before = getFirstCardText();
 
-  // Try finding next page number button
-  const currentPage = document.querySelector('li.artdeco-pagination__indicator--number.active');
-  if (currentPage) {
-    const nextLi = currentPage.nextElementSibling;
-    if (nextLi) {
-      const btn = nextLi.querySelector('button');
-      if (btn) { btn.click(); return true; }
-    }
-  }
-  return false;
+  const nextBtn = document.querySelector(
+    'button[aria-label="Next"], button.artdeco-pagination__button--next'
+  );
+
+  if (!nextBtn || nextBtn.disabled) return false;
+
+  nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  nextBtn.click();
+
+  // Wait for new content
+  return new Promise((resolve) => {
+    let attempts = 0;
+
+    const interval = setInterval(() => {
+      const after = getFirstCardText();
+
+      if (after && after !== before) {
+        clearInterval(interval);
+        resolve(true);
+      }
+
+      attempts++;
+      if (attempts > 15) { // ~7–8 sec max wait
+        clearInterval(interval);
+        resolve(false);
+      }
+    }, 500);
+  });
 }
-
 // ─── MESSAGE LISTENER ─────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'extractLeads') {
@@ -228,8 +236,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === 'nextPage') {
-    const success = clickNextPage();
+  clickNextPageAndWait().then(success => {
     sendResponse({ success });
-    return true;
+  });
+  return true;
   }
 });
