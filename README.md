@@ -91,8 +91,4 @@ Place PNG icons in the `icons/` folder:
 - `icon48.png` (48×48)
 - `icon128.png` (128×128)
 
-You can generate these from any icon using an online tool like [favicon.io](https://favicon.io).
 
----
-
-Built with ⚡ for lead generation professionals.
